@@ -82,7 +82,8 @@ task compileWpilibJars(type:Exec, dependsOn: copyPatches) {
     workingDir "$buildDir/sources/wpilib"
 
     if (System.getProperty('os.name').toLowerCase().contains('windows')) {
-        commandLine 'cmd', '/c', 'gradlew', ':wpilibj:jar', 'wpilibjJavadoc', 'wpilibjSources'
+        // commandLine 'cmd', '/c', 'gradlew', ':wpilibj:jar', 'wpilibjJavadoc', 'wpilibjSources'
+        commandLine 'cmd', '/c', 'gradlew', ':wpilibj:jar', 'wpilibjSources'
     } else {
         commandLine './gradlew', ':wpilibj:jar', 'wpilibjJavadoc', 'wpilibjSources'
     }

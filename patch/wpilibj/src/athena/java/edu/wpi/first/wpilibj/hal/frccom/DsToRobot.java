@@ -76,10 +76,10 @@ public class DsToRobot
                 throw new RuntimeException("Invalid Joystick code " + buffer[i+1]);
             }
             int numAxes = buffer[i+2] & 0xFF;
-            byte[] axesValues = new byte[numAxes];
+            float[] axesValues = new float[numAxes];
             i += 3;
             for (int a = 0; a < numAxes; a++) {
-                axesValues[a] = buffer[i];
+                axesValues[a] = Joystick.rawToFloat(buffer[i]);
                 i++;
             }
 
@@ -120,17 +120,21 @@ public class DsToRobot
     }
 
     public static class Joystick {
-        private byte[] axesValues;
+        private float[] axesValues;
         private boolean[] buttonValues;
         private int[] hatValues;
 
-        public Joystick(byte[] axesValues, boolean[] buttonValues, int[] hatValues) {
+        public Joystick(float[] axesValues, boolean[] buttonValues, int[] hatValues) {
             this.axesValues = axesValues;
             this.buttonValues = buttonValues;
             this.hatValues = hatValues;
         }
 
-        public byte[] getAxesValues() {
+        public static float rawToFloat(byte raw) {
+            return raw / 127.0f;
+        }
+
+        public float[] getAxesValues() {
             return this.axesValues;
         }
 
