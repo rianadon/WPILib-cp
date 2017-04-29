@@ -96,6 +96,12 @@ task compileWpilibJars(type:Exec, dependsOn: copyPatches) {
     }
 }
 
+// Note: the below works only once wpilib moves their Gradle version to 3.5.
+// task compileWpilibJars(type: GradleBuild, dependsOn: copyPatches) {
+//   buildFile = "$buildDir/sources/wpilib/build.gradle"
+//   tasks = [':wpilibj:jar', 'wpilibjJavadoc', 'wpilibjSources']
+// }
+
 compileJava.dependsOn compileWpilibJars
 
 import com.github.javaparser.*
