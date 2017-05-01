@@ -1,0 +1,314 @@
+/**
+ * This build script takes care of patching the wpilib source.
+ **/
+
+buildscript {
+    repositories { mavenCentral() }
+    dependencies {
+        classpath 'com.github.javaparser:javaparser-core:3.2.1'
+        classpath 'de.danielbechler:java-object-diff:0.94'
+    }
+}
+
+import com.github.javaparser.*
+import com.github.javaparser.ast.*
+import com.github.javaparser.ast.body.*
+import com.github.javaparser.ast.comments.*
+import com.github.javaparser.ast.expr.*
+import com.github.javaparser.ast.nodeTypes.*
+import com.github.javaparser.ast.stmt.*
+import com.github.javaparser.ast.type.*
+import com.github.javaparser.ast.visitor.*
+
+class BodyAdder extends VoidVisitorAdapter {
+    @Override
+    void visit(MethodDeclaration m, Object arg) {
+        if (m.native) {
+            m.setNative false
+
+            // Mark the method as a generated stub for later use
+            m.setJavadocComment(' Generated method stub ')
+
+            def body = new BlockStmt()
+            m.setBody(body)
+
+            def parentClass = (ClassOrInterfaceDeclaration) m.parentNode.get()
+            def toPrint = "\"${parentClass.name}.${m.name}(\" " +
+                          String.join(' +", "', m.parameters.collect { "+ \"${it.name}=\"+${it.name}" }) +
+                          " + \");\""
+
+            def call = JavaParser.parseStatement 'System.out.println(' + toPrint + ');'
+            body.statements.add(call)
+
+            def retVal = getDefault(m.type)
+            if (retVal != null)
+                body.statements.add(new ReturnStmt(retVal))
+        }
+    }
+
+    Expression getDefault(Type type) {
+        switch (type.toString()) {
+            case 'String': return new StringLiteralExpr('')
+            case 'boolean': return new BooleanLiteralExpr(false)
+            case 'int': return new IntegerLiteralExpr(0)
+            case 'short': return new IntegerLiteralExpr(0)
+            case 'byte': return new IntegerLiteralExpr(0)
+            case 'long': return new LongLiteralExpr(0)
+            case 'double': return new DoubleLiteralExpr(0)
+            case 'void': return null
+            case 'PWMConfigDataResult': return new NullLiteralExpr()
+            default: throw new Error("No default value for type $type")
+        }
+    }
+}
+
+class ImplementedMethodCollector extends VoidVisitorAdapter {
+    @Override
+    void visit(MethodDeclaration m, Object mapObject) {
+        def map = (Map) mapObject
+        if (!m.getJavadocComment().toString().contains('Generated method stub'))
+            map[new Tuple2(m.name.toString(), m.parameters)] = m
+    }
+}
+
+ext.patchFile = { file ->
+    def inp = new FileInputStream(file)
+    def cu = JavaParser.parse(inp)
+    new BodyAdder().visit(cu, null)
+
+    def w = new FileWriter(file, false)
+    w.write cu.toString()
+    w.close()
+}
+
+// ext.patchMethods = { src, apply ->
+//     def inp = new FileInputStream(src)
+//     // def cu = JavaParser.parse(inp)
+//     // def map = [:]
+//     // new ImplementedMethodCollector().visit(cu, map)
+//     // println map
+//     if (apply.exists()) {
+//         def dmp = new DiffMatchPatch()
+//         def diffs = dmp.diffMain(src.text, apply.text)
+//         diffs.each {diff ->
+//             println diff
+//         }
+//     }
+//     // new BodyAdder().visit(cu, null)
+
+//     // def w = new FileWriter(file, false)
+//     // w.write cu.toString()
+//     // w.close()
+// }
+    //
+    // def cu = JavaParser.parse(new FileInputStream(file))
+    //
+    //
+// }
+
+import de.danielbechler.diff.*
+import de.danielbechler.diff.comparison.*
+import de.danielbechler.diff.introspection.*
+import de.danielbechler.diff.instantiation.*
+import de.danielbechler.diff.node.*
+class NodeIntrospector implements Introspector {
+    @Override
+    public TypeInfo introspect(Class<?> type) {
+        def typeInfo = new TypeInfo(type)
+        def accessor = new PropertyAccessor('cn', type.getMethod('getChildNodes'), null)
+        typeInfo.addPropertyAccessor(accessor)
+        return typeInfo
+    }
+}
+
+class ModdedNode {
+    private com.github.javaparser.ast.Node node
+
+    public ModdedNode(com.github.javaparser.ast.Node n) {
+        node = n
+    }
+
+    public com.github.javaparser.ast.Node getNode() {
+        return node
+    }
+
+    public List<ModdedNode> getChildNodes() {
+        def ch = node.childNodes.collect { new ModdedNode(it) }
+        return ch
+    }
+
+    public boolean isGeneratedMethod() {
+        return (node instanceof MethodDeclaration) && node.javadocComment.toString().contains(' Generated method stub ')
+    }
+
+    public boolean equals(Object o) {
+        def c = ((ModdedNode)o).node
+        if (node instanceof ClassOrInterfaceDeclaration && c instanceof ClassOrInterfaceDeclaration)
+            return node.name.equals(c.name)
+        if (node instanceof MethodDeclaration && c instanceof MethodDeclaration) {
+            if (node.name != c.name)
+                return false;
+            for (int i = 0; i < Math.min(node.parameters.size(), c.parameters.size()); i++)
+                if (!node.parameters.get(i).type.equals(c.parameters.get(i).type))
+                    return false
+            return true
+        }
+        if (node instanceof InitializerDeclaration && c instanceof InitializerDeclaration)
+            return node.isStatic() == c.isStatic()
+        return node.equals(c)
+    }
+
+    public String toString() {
+        return node instanceof NodeWithSimpleName ? node.name : node.toString()
+    }
+}
+
+class ModifierVisitor implements DiffNode.Visitor {
+    private ModdedNode base
+    private ModdedNode working
+    private boolean handleDeletions
+    private boolean forwards
+
+    public ModifierVisitor(ModdedNode b, ModdedNode w, boolean hd, boolean f) {
+        base = b; working = w; handleDeletions = hd; forwards = f
+    }
+
+    public void node(DiffNode node, Visit visit) {
+        def baseVal = node.canonicalGet base
+        def workingVal = node.canonicalGet working
+
+        if (!(baseVal == null || baseVal instanceof ModdedNode) || !(workingVal == null || workingVal instanceof ModdedNode))
+            return
+
+        println "${node.getPath()} => ${node.getState()}"
+
+        def bpVal = node.parentNode?.parentNode?.canonicalGet base
+        def wpVal = node.parentNode?.parentNode?.canonicalGet working
+
+        if (node.isChanged()) {
+            if (baseVal.node instanceof NodeWithJavadoc)
+                if (workingVal.node.hasJavaDocComment())
+                    baseVal.node.setJavadocComment workingVal.node.getJavadocComment().get()
+                else
+                    baseVal.node.removeJavaDocComment()
+
+            if (!workingVal.isGeneratedMethod()) {
+                // Case 1: The method was implemented in the patch
+                // In this case replace the method with the new version
+                node.visitChildren(new ModifierVisitor(base, working, true, true))
+                visit.dontGoDeeper()
+            } else if(workingVal.node instanceof MethodDeclaration) {
+                // Case 2: The patch did not implement the method
+                // In this case replace the method with the old version
+                node.visitChildren(new ModifierVisitor(base, working, true, false))
+                visit.dontGoDeeper()
+            } else {
+                if (node.hasChildren()) {
+                    def that = this
+					node.visitChildren(new DiffNode.Visitor() {
+                        public void node(DiffNode node2, Visit visit2) {
+                            node2.visitChildren(that)
+                        }
+                    })
+					visit.dontGoDeeper()
+				} else {
+                    def nodeIndex = bpVal.node.childNodes.indexOf(baseVal.node)
+                    bpVal.node.childNodes.set(nodeIndex, workingVal)
+				}
+            }
+        } else if (node.isAdded()) {
+            if (forwards) {
+                if (bpVal.node instanceof NodeWithMembers && !(workingVal.node instanceof Comment)) {
+                    def bList = bpVal.node.members
+                    def wList = wpVal.node.members
+                    def nodeIndex = wList.indexOf(workingVal.node)
+                    bList.add(nodeIndex, workingVal.node)
+                } else if (bpVal.node instanceof CompilationUnit && workingVal.node instanceof ImportDeclaration) {
+                    def bList = bpVal.node.imports
+                    def wList = wpVal.node.imports
+                    def nodeIndex = wList.indexOf(workingVal.node)
+                    bList.add(nodeIndex, workingVal.node)
+                }
+                else if (bpVal.node instanceof NodeWithBlockStmt) {
+                    // bList = bpVal.node.getBody().statements
+                    // wList = wpVal.node.getBody().statements
+                    bpVal.node.setBody workingVal.node
+                }
+                else if (bpVal.node instanceof NodeWithOptionalBlockStmt) {
+                    bpVal.node.setBody workingVal.node
+                } else {
+                    println bpVal.node.class
+                }
+            }
+            visit.dontGoDeeper()
+        } else if (node.isRemoved()) {
+            visit.dontGoDeeper()
+        }
+    }
+}
+
+def generateTree
+
+def objectDifferBuilder = ObjectDifferBuilder.startBuilding()
+objectDifferBuilder.introspection().setDefaultIntrospector(new NodeIntrospector())
+
+// ext.testBuild = { ->
+//     def file1 = $/
+//     public class A {
+//         private static boolean x;
+
+//         static {
+
+//         }
+
+//         public static enum Enu {D, X};
+
+//         /** Generated method stub */
+//         public void C() {
+
+//         }
+
+//         public class B {
+//         }
+//     }
+//     /$
+
+//     def file2 = $/
+//     public class A {
+//         private static int b;
+
+//         static {
+//             b = 2;
+//         }
+
+//         public static enum Enu {D, X};
+
+//         public void C() {
+//             System.out.println("hi");
+//         }
+
+//         public class B {
+//             public void D() {
+//             }
+//         }
+//     }
+//     /$
+
+//     def f1 = new ModdedNode(JavaParser.parse(file1))
+//     def f2 = new ModdedNode(JavaParser.parse(file2))
+
+//     def diff = objectDifferBuilder.build().compare(f2, f1)
+//     diff.visit(new ModifierVisitor(f1, f2, false, true))
+//     println f1
+// }
+
+ext.patchMethods = { baseFile, workingFile ->
+    def base = new ModdedNode(JavaParser.parse(new FileInputStream(baseFile)))
+    def working = new ModdedNode(JavaParser.parse(new FileInputStream(workingFile)))
+    def diff = objectDifferBuilder.build().compare(working, base)
+    diff.visit(new ModifierVisitor(base, working, false, true))
+
+    def w = new FileWriter(baseFile, false)
+    w.write baase.toString()
+    w.close()
+}

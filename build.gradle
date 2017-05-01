@@ -3,15 +3,16 @@ apply plugin: 'application'
 apply plugin: 'eclipse'
 // apply plugin: 'docker'
 
+apply from: 'patch.gradle'
+
 ext.jarPath = "$buildDir/sources/wpilib/wpilibj/build/libs"
 
-buildscript {
-    repositories { mavenCentral() }
-    dependencies {
-        // classpath 'se.transmode.gradle:gradle-docker:+'
-        classpath 'com.github.javaparser:javaparser-core:3.2.1'
-    }
-}
+// buildscript {
+//     repositories { mavenCentral() }
+//     dependencies {
+//         classpath 'se.transmode.gradle:gradle-docker:+'
+//     }
+// }
 
 sourceSets {
     main {
@@ -78,7 +79,28 @@ task copyPatches(type: Copy, dependsOn: extractSources) {
     into "$buildDir/sources/wpilib"
 }
 
-task compileWpilibJars(type:Exec, dependsOn: copyPatches) {
+import java.nio.file.Paths
+task patchSources() { //dependsOn: extractSources) {
+    inputs.files(fileTree('patch'))
+
+    doLast {
+        inputs.files.each { f ->
+            def relPath = file('patch').toURI().relativize(f.toURI()).toString()
+            def basePath = Paths.get('build/sources/wpilib', relPath)
+            def baseFile = file(basePath)
+            if (baseFile.exists())
+                patchMethods baseFile, f
+            else
+                copy(file:f, tofile:baseFile)
+        }
+    }
+}
+
+// task testBuild() {
+//     testBuild()
+// }
+
+task compileWpilibJars(type:Exec, dependsOn: patchSources) {
     workingDir "$buildDir/sources/wpilib"
 
     if (System.getProperty('os.name').toLowerCase().contains('windows')) {
@@ -90,7 +112,7 @@ task compileWpilibJars(type:Exec, dependsOn: copyPatches) {
 
     onlyIf {
         !file("$buildDir/sources/wpilib/wpilibj/build/libs/wpilibj.jar").exists() ||
-        !file("$buildDir/sources/wpilib/wpilibj/build/libs/wpilibj-javadoc.jar").exists() ||
+        // !file("$buildDir/sources/wpilib/wpilibj/build/libs/wpilibj-javadoc.jar").exists() ||
         !file("$buildDir/sources/wpilib/wpilibj/build/libs/wpilibj-sources.jar").exists() ||
         !copyPatches.state.upToDate
     }
@@ -104,54 +126,10 @@ task compileWpilibJars(type:Exec, dependsOn: copyPatches) {
 
 compileJava.dependsOn compileWpilibJars
 
-import com.github.javaparser.*
-import com.github.javaparser.ast.body.*
-import com.github.javaparser.ast.expr.*
-import com.github.javaparser.ast.stmt.*
-import com.github.javaparser.ast.type.*
-import com.github.javaparser.ast.visitor.*
-
-class MyVisitor extends VoidVisitorAdapter {
-    @Override
-    void visit(MethodDeclaration m, Object arg) {
-        if (m.native) {
-            m.setNative false
-
-            def body = new BlockStmt()
-            m.setBody(body)
-
-            def retVal = getDefault(m.type)
-            if (retVal != null)
-                body.getStatements().add(new ReturnStmt(retVal))
-        }
-    }
-
-    Expression getDefault(Type type) {
-        switch (type.toString()) {
-            case 'String': return new StringLiteralExpr('')
-            case 'boolean': return new BooleanLiteralExpr(false)
-            case 'int': return new IntegerLiteralExpr(0)
-            case 'short': return new IntegerLiteralExpr(0)
-            case 'byte': return new IntegerLiteralExpr(0)
-            case 'long': return new LongLiteralExpr(0)
-            case 'double': return new DoubleLiteralExpr(0)
-            case 'void': return null
-            case 'PWMConfigDataResult': return new NullLiteralExpr()
-            default: throw new Error("No default value for type $type")
-        }
-    }
-}
-
 extractSources.doLast {
     println 'Patching native methods in wpilib'
     new File("$buildDir/sources/wpilib/wpilibj/src/athena/java/edu/wpi/first/wpilibj/hal").eachFile { file ->
-        def inp = new FileInputStream(file)
-        def cu = JavaParser.parse(inp)
-        new MyVisitor().visit(cu, null)
-
-        def w = new FileWriter(file, false)
-        w.write cu.toString()
-        w.close()
+        patchFile file
     }
 }
 
