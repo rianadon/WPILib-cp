@@ -33,8 +33,14 @@ class BodyAdder extends VoidVisitorAdapter {
             m.setBody(body)
 
             def parentClass = (ClassOrInterfaceDeclaration) m.parentNode.get()
+            def pList = m.parameters.collect {
+                if (it.type instanceof ArrayType)
+                    return "+ \"${it.name}=[...]\""
+                else
+                    return "+ \"${it.name}=\"+${it.name}"
+            }
             def toPrint = "\"${parentClass.name}.${m.name}(\" " +
-                          String.join(' +", "', m.parameters.collect { "+ \"${it.name}=\"+${it.name}" }) +
+                          String.join(' +", "', pList) +
                           " + \");\""
 
             def call = JavaParser.parseStatement 'System.out.println(' + toPrint + ');'
@@ -80,31 +86,6 @@ ext.patchFile = { file ->
     w.write cu.toString()
     w.close()
 }
-
-// ext.patchMethods = { src, apply ->
-//     def inp = new FileInputStream(src)
-//     // def cu = JavaParser.parse(inp)
-//     // def map = [:]
-//     // new ImplementedMethodCollector().visit(cu, map)
-//     // println map
-//     if (apply.exists()) {
-//         def dmp = new DiffMatchPatch()
-//         def diffs = dmp.diffMain(src.text, apply.text)
-//         diffs.each {diff ->
-//             println diff
-//         }
-//     }
-//     // new BodyAdder().visit(cu, null)
-
-//     // def w = new FileWriter(file, false)
-//     // w.write cu.toString()
-//     // w.close()
-// }
-    //
-    // def cu = JavaParser.parse(new FileInputStream(file))
-    //
-    //
-// }
 
 import de.danielbechler.diff.*
 import de.danielbechler.diff.comparison.*
@@ -180,7 +161,8 @@ class ModifierVisitor implements DiffNode.Visitor {
         if (!(baseVal == null || baseVal instanceof ModdedNode) || !(workingVal == null || workingVal instanceof ModdedNode))
             return
 
-        println "${node.getPath()} => ${node.getState()}"
+        if (handleDeletions || node.isRemoved())
+            println "${node.getPath()} => ${node.getState()}"
 
         def bpVal = node.parentNode?.parentNode?.canonicalGet base
         def wpVal = node.parentNode?.parentNode?.canonicalGet working
@@ -252,56 +234,6 @@ def generateTree
 def objectDifferBuilder = ObjectDifferBuilder.startBuilding()
 objectDifferBuilder.introspection().setDefaultIntrospector(new NodeIntrospector())
 
-// ext.testBuild = { ->
-//     def file1 = $/
-//     public class A {
-//         private static boolean x;
-
-//         static {
-
-//         }
-
-//         public static enum Enu {D, X};
-
-//         /** Generated method stub */
-//         public void C() {
-
-//         }
-
-//         public class B {
-//         }
-//     }
-//     /$
-
-//     def file2 = $/
-//     public class A {
-//         private static int b;
-
-//         static {
-//             b = 2;
-//         }
-
-//         public static enum Enu {D, X};
-
-//         public void C() {
-//             System.out.println("hi");
-//         }
-
-//         public class B {
-//             public void D() {
-//             }
-//         }
-//     }
-//     /$
-
-//     def f1 = new ModdedNode(JavaParser.parse(file1))
-//     def f2 = new ModdedNode(JavaParser.parse(file2))
-
-//     def diff = objectDifferBuilder.build().compare(f2, f1)
-//     diff.visit(new ModifierVisitor(f1, f2, false, true))
-//     println f1
-// }
-
 ext.patchMethods = { baseFile, workingFile ->
     def base = new ModdedNode(JavaParser.parse(new FileInputStream(baseFile)))
     def working = new ModdedNode(JavaParser.parse(new FileInputStream(workingFile)))
@@ -309,6 +241,6 @@ ext.patchMethods = { baseFile, workingFile ->
     diff.visit(new ModifierVisitor(base, working, false, true))
 
     def w = new FileWriter(baseFile, false)
-    w.write baase.toString()
+    w.write base.toString()
     w.close()
 }

@@ -74,13 +74,8 @@ task extractSources(type: Copy) {
     onlyIf { !file("$buildDir/sources/wpilib").exists() }
 }
 
-task copyPatches(type: Copy, dependsOn: extractSources) {
-    from 'patch'
-    into "$buildDir/sources/wpilib"
-}
-
 import java.nio.file.Paths
-task patchSources() { //dependsOn: extractSources) {
+task patchSources(dependsOn: extractSources) {
     inputs.files(fileTree('patch'))
 
     doLast {
@@ -90,15 +85,15 @@ task patchSources() { //dependsOn: extractSources) {
             def baseFile = file(basePath)
             if (baseFile.exists())
                 patchMethods baseFile, f
-            else
-                copy(file:f, tofile:baseFile)
+            else {
+                file(baseFile.parent).mkdirs()
+                def w = new FileWriter(baseFile.path, false)
+                w.write f.text
+                w.close()
+            }
         }
     }
 }
-
-// task testBuild() {
-//     testBuild()
-// }
 
 task compileWpilibJars(type:Exec, dependsOn: patchSources) {
     workingDir "$buildDir/sources/wpilib"
