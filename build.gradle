@@ -109,7 +109,7 @@ task compileWpilibJars(type:Exec, dependsOn: patchSources) {
         !file("$buildDir/sources/wpilib/wpilibj/build/libs/wpilibj.jar").exists() ||
         // !file("$buildDir/sources/wpilib/wpilibj/build/libs/wpilibj-javadoc.jar").exists() ||
         !file("$buildDir/sources/wpilib/wpilibj/build/libs/wpilibj-sources.jar").exists() ||
-        !copyPatches.state.upToDate
+        !patchSources.state.upToDate
     }
 }
 
