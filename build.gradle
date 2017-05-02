@@ -76,7 +76,8 @@ task extractSources(type: Copy) {
 
 import java.nio.file.Paths
 task patchSources(dependsOn: extractSources) {
-    inputs.files(fileTree('patch'))
+    inputs.files fileTree('patch')
+    outputs.files fileTree("$buildDir/sources/wpilib/wpilibj/src")
 
     doLast {
         inputs.files.each { f ->
@@ -96,6 +97,9 @@ task patchSources(dependsOn: extractSources) {
 }
 
 task compileWpilibJars(type:Exec, dependsOn: patchSources) {
+    inputs.files fileTree("$buildDir/sources/wpilib/wpilibj/src")
+    outputs.files fileTree(dir: "$buildDir/sources/wpilib/wpilibj/build/libs", include: "wpilibj*.jar")
+
     workingDir "$buildDir/sources/wpilib"
 
     if (System.getProperty('os.name').toLowerCase().contains('windows')) {
@@ -103,13 +107,6 @@ task compileWpilibJars(type:Exec, dependsOn: patchSources) {
         commandLine 'cmd', '/c', 'gradlew', ':wpilibj:jar', 'wpilibjSources'
     } else {
         commandLine './gradlew', ':wpilibj:jar', 'wpilibjJavadoc', 'wpilibjSources'
-    }
-
-    onlyIf {
-        !file("$buildDir/sources/wpilib/wpilibj/build/libs/wpilibj.jar").exists() ||
-        // !file("$buildDir/sources/wpilib/wpilibj/build/libs/wpilibj-javadoc.jar").exists() ||
-        !file("$buildDir/sources/wpilib/wpilibj/build/libs/wpilibj-sources.jar").exists() ||
-        !patchSources.state.upToDate
     }
 }
 
