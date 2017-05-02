@@ -1,18 +1,10 @@
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'eclipse'
-// apply plugin: 'docker'
 
 apply from: 'patch.gradle'
 
 ext.jarPath = "$buildDir/sources/wpilib/wpilibj/build/libs"
-
-// buildscript {
-//     repositories { mavenCentral() }
-//     dependencies {
-//         classpath 'se.transmode.gradle:gradle-docker:+'
-//     }
-// }
 
 sourceSets {
     main {
@@ -45,10 +37,9 @@ dependencies {
     } else {
         compile 'edu.wpi.first.wpilib.networktables.java:NetworkTables:+:desktop'
     }
-    // sources 'edu.wpi.first.wpilibj:athena:+'
+
     sources 'wpilibsuite:allwpilib:v2017.3.1@zip'
-    // compile 'edu.wpi.first.wpilib:athena-runtime:+@zip'
-    // compile 'edu.wpi.first.wpilibj:athena-jni:+'
+
     compile fileTree(dir: jarPath, include: "*.jar")
 }
 
@@ -126,7 +117,6 @@ extractSources.doLast {
 
 sourceCompatibility = 1.8
 mainClassName = 'Main'
-// applicationDefaultJvmArgs = ["-Djna.platform.library.path=/usr/local/lib", "-Djava.library.path=/usr/local/lib"]
 
 eclipse.classpath.file.whenMerged {
     def fileReferenceFactory = new org.gradle.plugins.ide.eclipse.model.internal.FileReferenceFactory()
@@ -134,38 +124,3 @@ eclipse.classpath.file.whenMerged {
 
     lib.sourcePath = fileReferenceFactory.fromPath("$jarPath/wpilibj-sources.jar")
 }
-
-// ------------------------------------------------------------------------------------------------
-//    Failed atttempt to use Docker to compile C++ files (NI shared objects were incompatible)
-// ------------------------------------------------------------------------------------------------
-// distDocker {
-//     // https://hub.docker.com/r/cloudcom/32bit-java/~/dockerfile/ and https://github.com/docker-library/openjdk/blob/master/8-jdk/Dockerfile
-//     baseImage 'resin/armv7hf-debian'
-//     setEnvironment 'JAVA_HOME', '/usr/lib/jvm/java-8-openjdk-armhf/jre'
-//     setEnvironment 'JAVA_HOME_LIB', '$JAVA_HOME/lib'
-//     // runCommand '[ cross-build-start ]'
-//     runCommand 'echo "deb http://deb.debian.org/debian jessie-backports main" > /etc/apt/sources.list.d/jessie-backports.list'
-//     runCommand 'apt-get update -yq && apt-get install -y openjdk-8-jre-headless=8u121-b13-1~bpo8+1 ca-certificates-java=20161107~bpo8+1'
-//     runCommand 'update-alternatives --set java $JAVA_HOME/bin/java'
-//     runCommand '/var/lib/dpkg/info/ca-certificates-java.postinst configure'
-
-//     // baseImage 'openjdk:8'
-//     addFile 'include', '/usr/local/include'
-//     addFile 'lib', '/usr/local/lib'
-//     setEnvironment 'LD_LIBRARY_PATH', '/usr/local/lib'
-
-//     // runCommand 'git clone --depth=0 https://github.com/wpilibsuite/allwpilib'
-//     // runCommand 'cd allwpilib && ./gradlew :wpilibc:build && cd ..'
-//     // runCommand 'export LD_LIBRARY_PATH=/usr/locallib'
-//     runCommand 'ldconfig'
-//     // runCommand '[ cross-build-end ]'
-// }
-
-// task explodeModel(type: Copy){
-//     configurations.runtime.filter { it.toString().endsWith('.zip') || it.toString().contains('jni') }.each{
-//     from zipTree(it)
-//   }
-//   into 'build/docker'
-// }
-
-// distDocker.dependsOn explodeModel
