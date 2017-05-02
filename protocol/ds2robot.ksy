@@ -66,7 +66,8 @@ types:
         type: u1
       - id: buttons # Note that these go in reverse, so the
                     # button at index i will be toggled if
-                    # data & 2^i > 0
+                    # data & 2^i > 0 (note int is encoded
+                    # as MSB)
         type: b1
         repeat: expr
         repeat-expr: num_buttons

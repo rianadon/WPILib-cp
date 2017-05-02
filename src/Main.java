@@ -1,4 +1,6 @@
 import java.io.IOException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.HLUsageReporting;
@@ -33,6 +35,8 @@ public class Main {
 
         public void teleopPeriodic() {
             System.out.println(j.getX() + " " + j.getY() + " " + j.getZ());
+            System.out.println(IntStream.rangeClosed(1, j.getButtonCount()).mapToObj(j::getRawButton).map(String::valueOf).collect(Collectors.joining(" ")));
+            System.out.println(IntStream.range(0, j.getPOVCount()).mapToObj(j::getPOV).map(String::valueOf).collect(Collectors.joining(" ")));
         }
 
         public void robotPeriodic() {

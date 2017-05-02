@@ -129,7 +129,7 @@ public class DsToRobot {
                 i++;
             }
             int numButtons = buffer[i];
-            int buttonsCode = (buffer[i + 2] << 8) + (buffer[i + 1] & 0xFF);
+            int buttonsCode = (buffer[i + 1] << 8) + (buffer[i + 2] & 0xFF);
             i += 3;
             boolean[] buttonValues = new boolean[numButtons];
             for (int b = 0; b < numButtons; b++) {

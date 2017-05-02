@@ -3,6 +3,7 @@ package edu.wpi.first.wpilibj.hal;
 
 import java.net.SocketException;
 import java.nio.ByteBuffer;
+
 import edu.wpi.first.wpilibj.hal.frccom.ComServer;
 import edu.wpi.first.wpilibj.hal.frccom.DsToRobot;
 
@@ -122,9 +123,7 @@ public class HAL extends JNIWrapper {
 
     public static short getJoystickAxes(byte joystickNum, float[] axesArray) {
         DsToRobot.Joystick[] joysticks = comServer.getJoysticks();
-        if (joysticks == null)
-            return 0;
-        if (joystickNum >= joysticks.length)
+        if (joysticks == null || joystickNum >= joysticks.length)
             return 0;
         float[] f = joysticks[joystickNum].getAxesValues();
         for (int i = 0; i < f.length; i++) {
@@ -133,14 +132,29 @@ public class HAL extends JNIWrapper {
         return (short) f.length;
     }
 
-    /** Generated method stub */
     public static short getJoystickPOVs(byte joystickNum, short[] povsArray) {
-        return 0;
+        DsToRobot.Joystick[] joysticks = comServer.getJoysticks();
+        if (joysticks == null || joystickNum >= joysticks.length)
+            return 0;
+        int[] s = joysticks[joystickNum].getHatValues();
+        for (int i = 0; i < s.length; i++) {
+            povsArray[i] = (short) s[i];
+        }
+        return (short) s.length;
     }
 
-    /** Generated method stub */
     public static int getJoystickButtons(byte joystickNum, ByteBuffer count) {
-        return 0;
+        DsToRobot.Joystick[] joysticks = comServer.getJoysticks();
+        if (joysticks == null || joystickNum >= joysticks.length)
+            return 0;
+        boolean[] buttonValues = joysticks[joystickNum].getButtonValues();
+        int buttonsCode = 0;
+        for (int b = 0; b < buttonValues.length; b++) {
+            if (buttonValues[b])
+                buttonsCode |= (1 << b);
+        }
+        count.put(0, (byte) buttonValues.length);
+        return buttonsCode;
     }
 
     /** Generated method stub */
