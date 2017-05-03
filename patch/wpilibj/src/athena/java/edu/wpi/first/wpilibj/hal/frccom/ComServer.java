@@ -118,13 +118,6 @@ public class ComServer implements Runnable {
                 clientMap.remove(a);
             }
         }
-        try {
-            byte[] address = {127, 0, 0, 1};
-            DatagramPacket sendPacket = new DatagramPacket(buffer, buffer.length, InetAddress.getByAddress(address), port);
-            socket.send(sendPacket);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     public void startRedirectingStdout() {
