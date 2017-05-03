@@ -5,6 +5,7 @@ This is an attempt to make WPILib work on platforms besides the RoboRio, with na
 ## Stuff that works
 
 * Basic joystick control from Driver Station
+* NetConsole (if you send a lot of stuff really quickly QDriverStation will drop messages)
 
 ## How it's compiled
 
@@ -12,7 +13,7 @@ This project uses Gradle for compilation. Here is a brief overview of the tasks 
 
 1. [WPILib](github.com/wpilibsuite/allwpilib) is cloned  and put in Gradle's build folder
 2. A [Java AST generator](https://github.com/javaparser/javaparser) patches all  native methods, replacing them with ones that fulfill the  needed return types but return constants
-3. Patches under the `patches` directory are copied into  the cloned folder, replacing files already there
+3. Patches under the `patches` directory are merged with the corresponding files in the src folder
 4. The project is built
 
 ## Usage
