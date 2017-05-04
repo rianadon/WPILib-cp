@@ -85,6 +85,7 @@ public class HAL extends JNIWrapper {
         // int word = nativeGetControlWord();
         // controlWord.update((word & 1) != 0, ((word >> 1) & 1) != 0, ((word >> 2) & 1) != 0, ((word >> 3) & 1) != 0, ((word >> 4) & 1) != 0, ((word >> 5) & 1) != 0);
         DsToRobot p = comServer.getLastPacket();
+        if (p == null) return;
         controlWord.update(p.getEnabled(),
                            p.getControlMode() == DsToRobot.ControlMode.AUTON,
                            p.getControlMode() == DsToRobot.ControlMode.TEST,

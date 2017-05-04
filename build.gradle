@@ -115,6 +115,16 @@ extractSources.doLast {
     }
 }
 
+task integrationTests(type:Exec, dependsOn: compileWpilibJars) {
+    workingDir "$buildDir/sources/wpilib"
+
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        commandLine 'cmd', '/c', 'gradlew', ':wpilibjIntegrationTests:run'
+    } else {
+        commandLine './gradlew', ':wpilibjIntegrationTests:run'
+    }
+}
+
 sourceCompatibility = 1.8
 mainClassName = 'Main'
 

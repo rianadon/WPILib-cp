@@ -2,14 +2,8 @@ import java.io.IOException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.HLUsageReporting;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.RobotState;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.internal.HardwareHLUsageReporting;
-import edu.wpi.first.wpilibj.internal.HardwareTimer;
 
 public class Main {
     public static class RobotTemplate extends IterativeRobot {
@@ -17,10 +11,7 @@ public class Main {
         private Joystick j;
 
         public void robotInit() {
-            // initializeHardwareConfiguration();
-            Timer.SetImplementation(new HardwareTimer());
-            HLUsageReporting.SetImplementation(new HardwareHLUsageReporting());
-            RobotState.SetImplementation(DriverStation.getInstance());
+            initializeHardwareConfiguration();
 
             j = new Joystick(0);
         }
