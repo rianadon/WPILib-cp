@@ -178,6 +178,10 @@ class ModifierVisitor implements DiffNode.Visitor {
         if (baseVal?.node instanceof Comment || workingVal?.node instanceof Comment)
             return
 
+        // Also don't handle annotations as they are dealt with in other ways
+        if (baseVal?.node instanceof AnnotationExpr || workingVal?.node instanceof AnnotationExpr)
+            return
+
         if (handleDeletions || node.isRemoved())
             println "${node.getPath()} => ${node.getState()}"
 
@@ -192,6 +196,10 @@ class ModifierVisitor implements DiffNode.Visitor {
                     baseVal.node.javadocComment = workingVal.node.javadocComment.get()
                 else
                     baseVal.node.removeJavaDocComment()
+
+            // Same with annotations
+            if (baseVal.node instanceof BodyDeclaration)
+                baseVal.node.annotations = workingVal.node.annotations
 
             if (!workingVal.isGeneratedMethod()) {
                 // Case 1: The method was implemented in the patch
