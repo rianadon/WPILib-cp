@@ -43,7 +43,6 @@ dependencies {
     compile fileTree(dir: jarPath, include: "*.jar")
 }
 
-
 task extractSources(type: Copy) {
     dependsOn configurations.sources
 
@@ -133,4 +132,14 @@ eclipse.classpath.file.whenMerged {
     def lib = entries.find { it.path.endsWith 'wpilibj.jar' }
 
     lib.sourcePath = fileReferenceFactory.fromPath("$jarPath/wpilibj-sources.jar")
+}
+
+applicationDefaultJvmArgs = ["-Drobotclass=$mainClassName"]
+
+jar {
+    manifest {
+        attributes(
+            'Robot-Class': mainClassName
+        )
+    }
 }

@@ -52,4 +52,57 @@ public abstract class RobotBase {
     //   ex.printStackTrace();
     // }
   }
+
+  /**
+   * Starting point for the applications.
+   */
+    @SuppressWarnings("PMD.UnusedFormalParameter")
+    public static void main(String... args) {
+        initializeHardwareConfiguration();
+        HAL.report(tResourceType.kResourceType_Language, tInstances.kLanguage_Java);
+        String robotName = System.getProperty("robotclass");
+        if (robotName == null) {
+          Enumeration<URL> resources = null;
+          try {
+              resources = RobotBase.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
+          } catch (IOException ex) {
+              ex.printStackTrace();
+          }
+          while (resources != null && resources.hasMoreElements()) {
+              try {
+                  Manifest manifest = new Manifest(resources.nextElement().openStream());
+                  robotName = manifest.getMainAttributes().getValue("Robot-Class");
+              } catch (IOException ex) {
+                  ex.printStackTrace();
+              }
+          }
+        }
+        RobotBase robot;
+        try {
+            robot = (RobotBase) Class.forName(robotName).newInstance();
+        } catch (Throwable throwable) {
+            DriverStation.reportError("ERROR Unhandled exception instantiating robot " + robotName + " " + throwable.toString() + " at " + Arrays.toString(throwable.getStackTrace()), false);
+            System.err.println("WARNING: Robots don't quit!");
+            System.err.println("ERROR: Could not instantiate robot " + robotName + "!");
+            System.exit(1);
+            return;
+        }
+        boolean errorOnExit = false;
+        try {
+            System.out.println("********** Robot program starting **********");
+            robot.startCompetition();
+        } catch (Throwable throwable) {
+            DriverStation.reportError("ERROR Unhandled exception: " + throwable.toString() + " at " + Arrays.toString(throwable.getStackTrace()), false);
+            errorOnExit = true;
+        } finally {
+            // startCompetition never returns unless exception occurs....
+            System.err.println("WARNING: Robots don't quit!");
+            if (errorOnExit) {
+                System.err.println("---> The startCompetition() method (or methods called by it) should have " + "handled the exception above.");
+            } else {
+                System.err.println("---> Unexpected return from startCompetition() method.");
+            }
+        }
+        System.exit(1);
+    }
 }
