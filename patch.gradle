@@ -256,7 +256,7 @@ class ModifierVisitor implements DiffNode.Visitor {
 def objectDifferBuilder = ObjectDifferBuilder.startBuilding()
 objectDifferBuilder.introspection().defaultIntrospector = new NodeIntrospector()
 
-ext.patchMethods = { baseFile, workingFile ->
+ext.patchMethods = { baseFile, workingFile, writeFile ->
     def bis = baseFile.newInputStream()
     def wis = workingFile.newInputStream()
     def base = new ModdedNode(JavaParser.parse(bis))
@@ -267,7 +267,7 @@ ext.patchMethods = { baseFile, workingFile ->
     def diff = objectDifferBuilder.build().compare(working, base)
     diff.visit(new ModifierVisitor(base, working, false, true))
 
-    baseFile.newWriter().withWriter { w ->
+    writeFile.newWriter().withWriter { w ->
         w << base.toString()
     }
 }
