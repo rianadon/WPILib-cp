@@ -31,51 +31,66 @@ import edu.wpi.first.wpilibj.util.WPILibVersion;
  * might be spawned as a task, then killed at the end of the Autonomous period.
  */
 public abstract class RobotBase {
-  /**
-   * Common initialization for all robot programs.
-   */
-  public static void initializeHardwareConfiguration() {
-    int rv = HAL.initialize(0);
-    assert rv == 1;
 
-    // Set some implementations so that the static methods work properly
-    Timer.SetImplementation(new HardwareTimer());
-    HLUsageReporting.SetImplementation(new HardwareHLUsageReporting());
-    RobotState.SetImplementation(DriverStation.getInstance());
+    private static String localRobotName = null;
 
-    // Load opencv
-    // try {
-    //   System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-    // } catch (UnsatisfiedLinkError ex) {
-    //   System.out.println("OpenCV Native Libraries could not be loaded.");
-    //   System.out.println("Please try redeploying, or reimage your roboRIO and try again.");
-    //   ex.printStackTrace();
-    // }
-  }
+    /**
+     * Common initialization for all robot programs.
+     */
+    public static void initializeHardwareConfiguration() {
+        int rv = HAL.initialize(0);
+        assert rv == 1;
 
-  /**
-   * Starting point for the applications.
-   */
+        // Set some implementations so that the static methods work properly
+        Timer.SetImplementation(new HardwareTimer());
+        HLUsageReporting.SetImplementation(new HardwareHLUsageReporting());
+        RobotState.SetImplementation(DriverStation.getInstance());
+
+        // Load opencv
+        // try {
+        //   System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+        // } catch (UnsatisfiedLinkError ex) {
+        //   System.out.println("OpenCV Native Libraries could not be loaded.");
+        //   System.out.println("Please try redeploying, or reimage your roboRIO and try again.");
+        //   ex.printStackTrace();
+        // }
+    }
+
+    /**
+     * Set the name of the Robot class. This is useful when you don't have access to the command line
+     * arguments Java is run with and the script is being run from something other than a jar.
+     *
+     * @param name  The name of the main robot class
+     */
+    public static void setName(String name) {
+        localRobotName = name;
+    }
+
+    /**
+     * Starting point for the applications.
+     */
     @SuppressWarnings("PMD.UnusedFormalParameter")
     public static void main(String... args) {
         initializeHardwareConfiguration();
         HAL.report(tResourceType.kResourceType_Language, tInstances.kLanguage_Java);
         String robotName = System.getProperty("robotclass");
+        if (robotName == null)
+            robotName = localRobotName;
         if (robotName == null) {
-          Enumeration<URL> resources = null;
-          try {
-              resources = RobotBase.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
-          } catch (IOException ex) {
-              ex.printStackTrace();
-          }
-          while (resources != null && resources.hasMoreElements()) {
-              try {
-                  Manifest manifest = new Manifest(resources.nextElement().openStream());
-                  robotName = manifest.getMainAttributes().getValue("Robot-Class");
-              } catch (IOException ex) {
-                  ex.printStackTrace();
-              }
-          }
+            Enumeration<URL> resources = null;
+            try {
+                resources = RobotBase.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            while (resources != null && resources.hasMoreElements()) {
+                try {
+                    Manifest manifest = new Manifest(resources.nextElement().openStream());
+                    robotName = manifest.getMainAttributes().getValue("Robot-Class");
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
         }
         RobotBase robot;
         try {
