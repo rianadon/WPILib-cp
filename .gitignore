@@ -4,3 +4,6 @@ build
 
 # Eclipse
 bin
+
+# Visual Studio Code
+.vscode

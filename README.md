@@ -4,6 +4,8 @@ This is an attempt to make WPILib work on platforms besides the RoboRio, with na
 
 NOTE: This project has no intentions of replacing WPILib, and if you use it instead of WPILib there will probably be a lot of things that will fail. It's more for if you want to use a platform on which WPILib is not supported (i.e. anything that doesn't have the architecture of the RoboRio as the NI libraries are distributed as shared libraries), because a semi-working WPILib is better than no WPILib.
 
+For now (and very likely forever), this only supports Java.
+
 ## Stuff that works
 
 * Joystick control from Driver Station (axes, buttons, POV hats)
