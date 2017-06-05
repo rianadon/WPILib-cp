@@ -203,8 +203,16 @@ public class HAL extends JNIWrapper {
         return 0;
     }
 
-    /** Generated method stub */
     public static int sendError(boolean isError, int errorCode, boolean isLVCode, String details, String location, String callStack, boolean printMsg) {
+        if (printMsg) {
+            if (location != null && location.length() > 0) {
+                System.err.println((isError ? "Error" : "Warning") + " at " + location);
+            }
+            System.err.println(details);
+            if (callStack != null && callStack.length() > 0) {
+                System.err.println(callStack);
+            }
+        }
         return 0;
     }
 }

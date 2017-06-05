@@ -120,9 +120,8 @@ public class ComServer implements Runnable {
         }
     }
 
-    public void startRedirectingStdout() {
-        PrintStream orgStream = System.out;
-        System.setOut(new PrintStream(new OutputStream() {
+    private PrintStream getStdStream(PrintStream oldStream) {
+        return new PrintStream(new OutputStream() {
             private ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
             @Override
@@ -134,14 +133,19 @@ public class ComServer implements Runnable {
                 } else if (byt != '\r') {
                     buffer.write(b);
                 }
-                orgStream.write(b);
+                oldStream.write(b);
             }
 
             @Override
             public void flush() throws IOException {
                 super.flush();
-                orgStream.flush();
+                oldStream.flush();
             }
-        }));
+        });
+    }
+
+    public void startRedirectingStdout() {
+        System.setOut(getStdStream(System.out));
+        System.setErr(getStdStream(System.err));
     }
 }
