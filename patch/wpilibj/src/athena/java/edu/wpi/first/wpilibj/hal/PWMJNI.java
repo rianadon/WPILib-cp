@@ -20,9 +20,8 @@ public class PWMJNI extends DIOJNI {
         return channel < SensorBase.kPwmChannels && channel >= 0;
     }
 
-    /** Generated method stub */
     public static void freePWMPort(int pwmPortHandle) {
-        System.out.println("PWMJNI.freePWMPort(" + "pwmPortHandle=" + pwmPortHandle + ");");
+        HardwareManager.getHardwareInterface().freePWM(pwmPortHandle);
     }
 
     /** Generated method stub */
