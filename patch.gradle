@@ -182,8 +182,8 @@ class ModifierVisitor implements DiffNode.Visitor {
         if (baseVal?.node instanceof AnnotationExpr || workingVal?.node instanceof AnnotationExpr)
             return
 
-        if (handleDeletions || node.isRemoved())
-            println "${node.getPath()} => ${node.getState()}"
+        // if (handleDeletions || node.isRemoved())
+        //     println "${node.getPath()} => ${node.getState()}"
 
         // Get parent nodes
         def bpVal = node.parentNode?.parentNode?.canonicalGet base

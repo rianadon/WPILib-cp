@@ -74,7 +74,7 @@ task patchSources(dependsOn: extractSources) {
             def relPath = file('patch').toURI().relativize(f.toURI()).toString()
             def baseFile = file(Paths.get('build/sources/wpilib', relPath))
             def backFile = file(Paths.get('build/sources/wpilib.back', relPath))
-            if (baseFile.exists()) {
+            if (baseFile.exists() && (!backFile.exists() || backFile.length() > 0)) {
                 if (!backFile.exists()) {
                     file(backFile.parent).mkdirs()
                     backFile.newWriter().withWriter { w ->
@@ -84,6 +84,8 @@ task patchSources(dependsOn: extractSources) {
 
                 patchMethods backFile, f, baseFile
             } else {
+                file(backFile.parent).mkdirs()
+                backFile.createNewFile()
                 file(baseFile.parent).mkdirs()
                 baseFile.newWriter().withWriter { w ->
                     w << f.text
