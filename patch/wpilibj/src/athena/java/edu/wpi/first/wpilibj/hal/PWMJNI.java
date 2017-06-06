@@ -13,7 +13,9 @@ public class PWMJNI extends DIOJNI {
             return 0;
         }
 
-        return HardwareManager.getHardwareInterface().nthPWM(channel);
+        int port = HardwareManager.getHardwareInterface().nthPWM(channel);
+        HardwareManager.getHardwareInterface().initPWM(port);
+        return port;
     }
 
     public static boolean checkPWMChannel(int channel) {
