@@ -1,4 +1,4 @@
-# Cross-patform WPILib
+# Cross-platform WPILib
 
 This is an attempt to make WPILib work on platforms besides the RoboRio, with native JNI methods implemented in Java.
 
